@@ -1,0 +1,30 @@
+ 
+
+@ResponseBody
+@RequestMapping(value = "/verify_password", method = RequestMethod.POST)
+public ResponseEntity<String> verifyPassword(@RequestParam String userId, @RequestParam String enteredPassword) {
+    try {
+        // 데이터베이스에서 저장된 사용자 정보를 검색
+        UserDTO user = userService.getUserByUserId(userId);
+
+        if (user != null) {
+            // 저장된 해시된 비밀번호를 가져옴
+            String storedHashedPassword = user.getHashedPassword();
+
+            // 비교를 위해 입력된 비밀번호를 해시함
+            String enteredHashedPassword = hashPassword(enteredPassword);
+
+            // 입력된 해시된 비밀번호와 저장된 해시된 비밀번호를 비교
+            if (enteredHashedPassword.equals(storedHashedPassword)) {
+                return new ResponseEntity<>("비밀번호 확인 성공", HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("잘못된 비밀번호", HttpStatus.BAD_REQUEST);
+            }
+        } else {
+            return new ResponseEntity<>("사용자를 찾을 수 없음", HttpStatus.NOT_FOUND);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        return new ResponseEntity<>("비밀번호 확인 중 오류 발생", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}

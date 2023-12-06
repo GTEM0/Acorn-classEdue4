@@ -1,0 +1,138 @@
+ 
+
+CREATE OR REPLACE  PROCEDURE   ojc3     ( p_empno in number , p_new_sal in number)
+is
+begin
+    update emptemp
+    set  sal = p_new_sal
+    where  empno = p_empno;
+    commit;
+end  ;
+
+create table  emptemp( empno number(4) ,  name varchar2(10) ,  sal number(4) );
+insert into emptemp values( 101, 'gildong' , 4500) ;
+select * from emptemp;
+exec  ojc3(101, 5500);
+
+
+// 웹에서 plsql 사용 샘플 /////
+// plsql 사용예제
+
+public class PLSQLCaller {
+    public static void main(String[] args) {
+        // 데이터베이스 연결 정보 설정
+        String url = "jdbc:oracle:thin:@localhost:1521:xe";
+        String username = "scott";
+        String password = "tiger";
+
+        // PL/SQL 호출을 위한 SQL 문
+        String plsql = "{ call ojc3(?, ?) }";
+
+        try {
+            // JDBC 드라이버 로드
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+
+            // 데이터베이스 연결
+            Connection connection = DriverManager.getConnection(url, username, password);
+
+            // CallableStatement 생성 및 PL/SQL 호출
+            CallableStatement callableStatement = connection.prepareCall(plsql);
+            callableStatement.setString(1, "101");
+            callableStatement.setString(2, "6000");
+            callableStatement.execute();
+
+            // 자원 정리
+            callableStatement.close();
+            connection.close();
+
+            System.out.println("PL/SQL 호출이 성공적으로 완료되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+//////// 권한설정 샘플 //////
+--사용자만들기
+CREATE USER  acorn   IDENTIFIED BY  1234;
+
+-- 권한 부여하기
+권한 role (  
+CREATE TABLE: 새로운 테이블을 생성하는 권한.
+CREATE VIEW: 새로운 뷰를 생성하는 권한.
+CREATE SEQUENCE: 새로운 시퀀스를 생성하는 권한.
+CREATE PROCEDURE: 새로운 프로시저를 생성하는 권한.
+CREATE TRIGGER: 새로운 트리거를 생성하는 권한 등.
+)
+--CONNECT
+--RESOURCE,
+--DBA
+
+GRANT   CONNECT, RESOURCE    TO acorn ;
+GRANT  DBA  TO admin;
+
+
+-- 권한 회수하기
+REVOKE CONNECT, RESOURCE  FROM  acorn;
+
+
+--  connect  :  디비접속권한
+--  resource  :  데이터베이스객체생성및 조작권한    ddl, dml 사용가능 
+
+
+-- 역할 만들기
+create  role manager;
+
+--  역할에 권한 설정하기
+--  manager  role 에 대해서 권한 설정
+
+
+grant   create table,  create view  to manager ;
+grant   select on member_tbl_11  to manager ;
+
+
+-- manager role을  acorn1사용자에게 부여함
+   grant manager to acon1;
+
+
+
+// 외래키 설정시    Delete constraint  , update constraint  
+//기본제약조건이  Restricted  //참조하고 있으면 삭제못함                 ==> 별도의 설정이 필요없음 기본값
+//            cascade    // 참조하고 있는 모든 것이 삭제됨                    ==>  on delete cascade
+//            nullify    // 참조하고 있는 것이   null로 채워짐                  ==>  on delete set null 
+
+
+create table ctbl ( id varchar2(10) primary key , name varchar2(10) )  ;
+create table otbl ( code varchar2(10) primary key,  iid  varchar2(10) references ctbl (id) on delete cascade );
+
+
+insert into ctbl values( 't1' ,  'kim');
+insert into ctbl values( 't2'  , 'choi');
+insert into otbl values( 'o1', 't1');
+insert into otbl values( 'o2', 't1');
+
+
+commit;
+
+delete  from ctbl where id  ='t1';   //  t1고객 삭제시   t1을 참조하는 주문정보가 모두 삭제가 됨
+select * from  otbl; //  주문정보가 모두 삭제된것을 확인 할 수 있다.
+
+
+
+
+create table ctbl2 ( id varchar2(10) primary key , name varchar2(10) )  ;
+create table otbl2 ( code varchar2(10) primary key,  iid  varchar2(10) references ctbl2 (id) on delete set null );
+
+
+insert into ctbl2 values( 't1' ,  'kim');
+insert into ctbl2 values( 't2'  , 'choi');
+insert into otbl2 values( 'o1', 't1');
+insert into otbl2 values( 'o2', 't1');
+
+
+commit;
+
+delete  from ctbl2 where id  ='t1';   //  t1고객 삭제시   t1을 참조하는 주문정보가 모두 삭제가 됨
+select * from  otbl2; //  주문정보가 모두 삭제된것을 확인 할 수 있다.
